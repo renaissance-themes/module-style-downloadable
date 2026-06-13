@@ -1,0 +1,177 @@
+/* Vanilla/blank — Magento_Downloadable module CSS (the @magento_import equivalent,
+   collected into the bundle by Vanilla_ThemeBuild's @vanilla-modules directive).
+   Ported from blank's Magento_Downloadable/web/css/source/_module.less.
+
+   Scope: the DOWNLOADABLE product type UI on the PDP. A downloadable product
+   replaces the qty + add-to-cart options with a LINKS list (.field.downloads:
+   each .item is a checkbox + title + price, with an optional per-link "Sample"
+   link) and, when present, a SAMPLES list (.downloadable.samples, a <dl>). The
+   options-wrapper legend ("Links" title) and the now-meaningless qty field are
+   removed. Desktop splits the form into the links column (left) and the
+   add-to-cart actions column (right).
+
+   BOUNDARY (module CSS): this extends the PDP for one product type only. The
+   add-to-cart button, the option checkboxes, and the .price component are all
+   lib-owned and already styled (Magento_Catalog + the lib): we only place and
+   compose them here, never re-style them. */
+@layer product {
+
+  /* ===== Samples list (.downloadable.samples) =====
+     A <dl> of "Samples" download links shown above the links list. blank spaces
+     the whole block below and tightens each <dd>.
+
+     PARITY NOTE (verified live 2026-06-12): Magento 2.4.8 emits the samples list
+     as <dl class="items samples"> — this selector matches NOTHING, exactly like
+     blank's own compiled .downloadable.samples rule. The samples list therefore
+     renders with default dl/dd styling on BOTH themes; kept as-is because
+     "fixing" the selector would deviate from blank's rendered output. */
+  .catalog-product-view .downloadable.samples {
+    margin-block-end: var(--indent-base);
+
+    & dd {
+      margin-block: 0 var(--indent-s);
+      margin-inline: 0;
+    }
+  }
+
+  /* ===== Links list (.field.downloads) =====
+     The selectable downloadable links. Magento renders .field.downloads holding
+     the option checkboxes; each .item carries the checkbox + title, the per-link
+     price, and (optionally) a "Sample" link. The checkbox is the lib forms
+     component (not re-styled); we only lay out the row and compose the price. */
+  .catalog-product-view .field.downloads {
+
+    /* Each link row (Magento emits .field.choice[data-role=link], checkbox +
+       label holding the title, price and optional "Sample" link). The row is the
+       positioning context for the sample link below. */
+    & .field.choice {
+      position: relative;
+    }
+
+    /* The price column for a single link. The .price component itself is
+       lib-owned; here we only compose its parts into the inline "title + price
+       (Excl. Tax: ...)" reading blank produces. */
+    & .price-container {
+      display: inline;
+      white-space: nowrap;
+
+      /* glue the price to the link title with " + " */
+      &::before {
+        content: ' + ';
+        display: inline;
+      }
+    }
+
+    & .price-excluding-tax {
+      display: inline;
+
+      /* frame the ex-tax figure as "(Label: " ... ")" using the data-label */
+      &::before {
+        content: ' (' attr(data-label) ': ';
+      }
+
+      &::after {
+        content: ')';
+      }
+    }
+
+    /* The primary (incl. tax) figure reads a touch larger + semibold. This is the
+       type-specific emphasis blank applies to the link price; the .price colour
+       and machinery stay the lib component's. */
+    & .price-including-tax {
+      display: inline;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    /* Per-link "Sample" link: pinned to the row's trailing edge (blank floats it
+       right; absolute-in-row reproduces the same single-line placement without a
+       float AND without disturbing the inline title + price text flow). The link
+       itself is body-link styled by the lib. */
+    & .sample.link {
+      position: absolute;
+      inset-inline-end: 0;
+      inset-block-start: 0;
+    }
+  }
+
+  /* ===== Downloadable PDP form chrome (.page-product-downloadable) ===== */
+  .page-product-downloadable {
+
+    /* Spacing under the add-to-cart form. blank's clearfix ::after does double
+       duty here: besides clearing the floated columns (which our flex layout
+       doesn't need), the ::after table box CONTAINS the bottom margin escaping
+       from the options column (fieldset 20px), making the form 20px taller —
+       verified live; without it the next section sits 20px higher than blank. */
+    & .product-add-form {
+      margin-block-end: var(--indent-m);
+
+      &::after {
+        content: '';
+        display: table;
+      }
+    }
+
+    /* A downloadable product has no quantity (each link is bought once), so the
+       qty field in the actions column is hidden. */
+    & .product-options-bottom .field.qty {
+      display: none !important;
+    }
+
+    /* The options fieldset's "Links" legend duplicates the on-page label, so it
+       is visually hidden (kept for assistive tech). */
+    & .product-options-wrapper .fieldset .legend.links-title {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      border: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  /* ===== "Links can be downloaded" label (.table-downloadable-products) =====
+     The product-name cell in the downloadable links summary table gets a little
+     trailing room before the adjacent column. */
+  .catalog-product-view .table-downloadable-products .product-name {
+    margin-inline-end: 15px;
+  }
+
+  /* ===== Desktop: links column | actions column =====
+     blank floats the options wrapper (the links list) to 55% on the left and the
+     actions (add-to-cart) to 40% on the right. We reproduce the same split with
+     a flex row (no floats). The flex container must be the FORM: the options
+     wrapper and options-bottom are children of form#product_addtocart_form, not
+     of .product-add-form (flex on the outer div lays out only the form element
+     and the percentage columns never resolve — verified live, the links column
+     collapsed to its min-content width). The single 768px breakpoint matches
+     blank's @screen__m so the columns only split on the wider layout. */
+  @media (--screen-m) {
+    .page-product-downloadable .product-add-form form {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .page-product-downloadable .product-options-wrapper {
+      flex: 0 0 55%;
+      max-width: 55%;
+    }
+
+    .page-product-downloadable .product-options-bottom {
+      flex: 0 0 40%;
+      max-width: 40%;
+    }
+
+    /* With the qty field hidden, the actions sit flush at the top of their
+       column (blank removed the qty-driven top padding). */
+    .page-product-downloadable .product-options-bottom .field.qty + .actions {
+      padding-block-start: 0;
+    }
+  }
+}
